@@ -1,0 +1,29 @@
+name: Notify
+
+on:
+  workflow_run:
+    workflows: ["Build PDF", "Markdown Lint"]
+    types:
+      - completed
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine message
+        id: result
+        run: |
+          if [[ "${{ github.event.workflow_run.conclusion }}" == "success" ]]; then
+            echo "status=✅ CI завершился успешно" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=❌ CI завершился с ошибками" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Send notification to Discord/Teams
+        uses: Ilshidur/action-discord@master
+        if: always()
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          message: |
+            **${{ github.repository }}** — ${{ steps.result.outputs.status }}.
+            Workflow: ${{ github.event.workflow_run.name }}
+            URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}
