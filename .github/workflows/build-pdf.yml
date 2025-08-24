@@ -1,0 +1,31 @@
+name: Build PDF
+
+on:
+  push:
+    paths:
+      - 'docs/**/*.md'
+  pull_request:
+    paths:
+      - 'docs/**/*.md'
+
+jobs:
+  build-pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Pandoc
+        uses: pandoc/actions/setup-pandoc@v1
+      - name: Build PDF
+        run: |
+          mkdir -p docs
+          for file in docs/*.md; do
+            [ -f "$file" ] || continue
+            pdf="${file%.md}.pdf"
+            pandoc "$file" -o "$pdf" --pdf-engine=xelatex
+          done
+      - name: Upload PDFs
+        uses: actions/upload-artifact@v3
+        with:
+          name: pdf-docs
+          path: docs/*.pdf
